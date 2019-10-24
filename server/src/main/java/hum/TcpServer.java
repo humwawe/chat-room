@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
  */
 public class TcpServer implements ClientHandlerCallback {
     private final int port;
-    private ClientListener mListener;
+    private ClientListener listener;
     private List<ClientHandler> clientHandlerList = new ArrayList<>();
     private final ExecutorService forwardingThreadPoolExecutor;
 
@@ -29,7 +29,7 @@ public class TcpServer implements ClientHandlerCallback {
     public boolean start() {
         try {
             ClientListener listener = new ClientListener(port);
-            mListener = listener;
+            this.listener = listener;
             listener.start();
         } catch (IOException e) {
             e.printStackTrace();
@@ -39,8 +39,8 @@ public class TcpServer implements ClientHandlerCallback {
     }
 
     public void stop() {
-        if (mListener != null) {
-            mListener.exit();
+        if (listener != null) {
+            listener.exit();
         }
         synchronized (TcpServer.this) {
             for (ClientHandler clientHandler : clientHandlerList) {
