@@ -86,7 +86,6 @@ public class TcpServer implements ClientHandlerCallback {
 
     @Override
     public void onNewMessageArrived(final ClientHandler handler, final String msg) {
-        System.out.println("received:" + handler.getClientInfo() + ":" + msg);
         forwardingThreadPoolExecutor.execute(() -> {
             synchronized (TcpServer.this) {
                 for (ClientHandler clientHandler : clientHandlerList) {
@@ -133,7 +132,6 @@ public class TcpServer implements ClientHandlerCallback {
                             SocketChannel socketChannel = serverSocketChannel.accept();
                             try {
                                 ClientHandler clientHandler = new ClientHandler(socketChannel, TcpServer.this);
-                                clientHandler.readToPrint();
                                 synchronized (TcpServer.this) {
                                     clientHandlerList.add(clientHandler);
                                 }

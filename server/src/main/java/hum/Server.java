@@ -2,6 +2,8 @@ package hum;
 
 
 import hum.constants.Constants;
+import hum.core.IoContext;
+import hum.impl.IoSelectorProvider;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +14,7 @@ import java.io.InputStreamReader;
  */
 public class Server {
     public static void main(String[] args) throws IOException {
-
+        IoContext.setup().ioProvider(new IoSelectorProvider()).start();
         TcpServer tcpServer = new TcpServer(Constants.TCP_PORT_SERVER);
         boolean isSucceed = tcpServer.start();
         if (!isSucceed) {
@@ -31,5 +33,6 @@ public class Server {
 
         ServerProvider.stop();
         tcpServer.stop();
+        IoContext.close();
     }
 }

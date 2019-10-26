@@ -1,6 +1,7 @@
 package hum.handler;
 
 
+import hum.core.Connector;
 import hum.utils.CloseUtils;
 
 import java.io.*;
@@ -8,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,19 +16,30 @@ import java.util.concurrent.Executors;
  * @author hum
  */
 public class ClientHandler {
+    private final Connector connector;
     private final SocketChannel socketChannel;
-    private final ClientReadHandler readHandler;
     private final ClientWriteHandler writeHandler;
     private final ClientHandlerCallback clientHandlerCallback;
     private final String clientInfo;
 
     public ClientHandler(SocketChannel socketChannel, ClientHandlerCallback clientHandlerCallback) throws IOException {
         this.socketChannel = socketChannel;
-        socketChannel.configureBlocking(false);
 
-        Selector readSelector = Selector.open();
-        socketChannel.register(readSelector, SelectionKey.OP_READ);
-        this.readHandler = new ClientReadHandler(readSelector);
+        connector = new Connector() {
+            @Override
+            public void onChannelClosed(SocketChannel channel) {
+                super.onChannelClosed(channel);
+                exitBySelf();
+            }
+
+            @Override
+            protected void onReceiveNewMessage(String str) {
+                super.onReceiveNewMessage(str);
+                // broadcast
+                clientHandlerCallback.onNewMessageArrived(ClientHandler.this, str);
+            }
+        };
+        connector.setup(socketChannel);
 
         Selector writeSelector = Selector.open();
         socketChannel.register(writeSelector, SelectionKey.OP_WRITE);
@@ -39,12 +50,8 @@ public class ClientHandler {
         System.out.println("new client connect：" + clientInfo);
     }
 
-    public String getClientInfo() {
-        return clientInfo;
-    }
-
     public void exit() {
-        readHandler.exit();
+        CloseUtils.close(connector);
         writeHandler.exit();
         CloseUtils.close(socketChannel);
         System.out.println("client exit:" + clientInfo);
@@ -57,77 +64,6 @@ public class ClientHandler {
 
     public void send(String str) {
         writeHandler.send(str);
-    }
-
-    public void readToPrint() {
-        // start read thread
-        readHandler.start();
-    }
-
-    /**
-     * handle message, print to stdout
-     */
-    class ClientReadHandler extends Thread {
-        private boolean done = false;
-        private final Selector selector;
-        private final ByteBuffer byteBuffer;
-
-        ClientReadHandler(Selector selector) {
-            this.selector = selector;
-            this.byteBuffer = ByteBuffer.allocate(256);
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            try {
-                do {
-                    if (selector.select() == 0) {
-                        if (done) {
-                            break;
-                        }
-                        continue;
-                    }
-
-                    Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-                    while (iterator.hasNext()) {
-                        if (done) {
-                            break;
-                        }
-                        SelectionKey key = iterator.next();
-                        iterator.remove();
-
-                        if (key.isReadable()) {
-                            SocketChannel client = (SocketChannel) key.channel();
-                            byteBuffer.clear();
-                            int len = client.read(byteBuffer);
-                            if (len > 0) {
-                                // discard '\n'
-                                String str = new String(byteBuffer.array(), 0, len - 1);
-                                clientHandlerCallback.onNewMessageArrived(ClientHandler.this, str);
-                            } else {
-                                System.out.println("can't read message!");
-                                ClientHandler.this.exitBySelf();
-                                break;
-                            }
-                        }
-                    }
-                } while (!done);
-            } catch (Exception e) {
-                if (!done) {
-                    System.out.println("exception close!");
-                    ClientHandler.this.exitBySelf();
-                }
-            } finally {
-                CloseUtils.close(selector);
-            }
-        }
-
-        void exit() {
-            done = true;
-            selector.wakeup();
-            CloseUtils.close(selector);
-        }
     }
 
     /**
