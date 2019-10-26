@@ -25,6 +25,9 @@ public class IoArgs {
         return new String(byteBuffer, 0, buffer.position() - 1);
     }
 
+    /**
+     * when buffer ready, handle message
+     */
     public interface IoArgsEventListener {
         void onStarted(IoArgs args);
 

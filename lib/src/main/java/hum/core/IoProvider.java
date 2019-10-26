@@ -15,6 +15,9 @@ public interface IoProvider extends Closeable {
 
     void unRegisterOutput(SocketChannel channel);
 
+    /**
+     * when channel read ready, write to buffer (ioArgs)
+     */
     abstract class HandleInputCallback implements Runnable {
         @Override
         public final void run() {

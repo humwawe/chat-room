@@ -46,12 +46,17 @@ public class Connector implements Closeable, SocketChannelAdapter.OnChannelStatu
 
         @Override
         public void onCompleted(IoArgs args) {
-            // print to stdout
+
             onReceiveNewMessage(args.bufferString());
             readNextMessage();
         }
     };
 
+    /**
+     * print to stdout
+     *
+     * @param str
+     */
     protected void onReceiveNewMessage(String str) {
         System.out.println(key.toString() + ":" + str);
     }
