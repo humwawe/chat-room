@@ -16,7 +16,7 @@ public interface IoProvider extends Closeable {
     void unRegisterOutput(SocketChannel channel);
 
     /**
-     * when channel read ready, write to buffer (ioArgs)
+     * when channel readFrom ready, write to buffer (ioArgs)
      */
     abstract class HandleInputCallback implements Runnable {
         @Override
@@ -37,6 +37,12 @@ public interface IoProvider extends Closeable {
 
         public final void setAttach(Object attach) {
             this.attach = attach;
+        }
+
+        public final <T> T getAttach() {
+            @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked"})
+            T attach = (T) this.attach;
+            return attach;
         }
 
         protected abstract void canProviderOutput(Object attach);

@@ -1,6 +1,10 @@
 package hum.core;
 
+import hum.box.StringReceivePacket;
+import hum.box.StringSendPacket;
 import hum.impl.SocketChannelAdapter;
+import hum.impl.async.AsyncReceiveDispatcher;
+import hum.impl.async.AsyncSendDispatcher;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -15,6 +19,8 @@ public class Connector implements Closeable, SocketChannelAdapter.OnChannelStatu
     private SocketChannel channel;
     private Sender sender;
     private Receiver receiver;
+    private SendDispatcher sendDispatcher;
+    private ReceiveDispatcher receiveDispatcher;
 
     public void setup(SocketChannel socketChannel) throws IOException {
         this.channel = socketChannel;
@@ -24,31 +30,24 @@ public class Connector implements Closeable, SocketChannelAdapter.OnChannelStatu
 
         this.sender = adapter;
         this.receiver = adapter;
-
-        readNextMessage();
+        sendDispatcher = new AsyncSendDispatcher(sender);
+        receiveDispatcher = new AsyncReceiveDispatcher(receiver, receivePacketCallback);
+        receiveDispatcher.start();
     }
 
-    private void readNextMessage() {
-        if (receiver != null) {
-            try {
-                receiver.receiveAsync(echoReceiveListener);
-            } catch (IOException e) {
-                System.out.println("read exception: " + e.getMessage());
+    public void send(String msg) {
+        SendPacket packet = new StringSendPacket(msg);
+        sendDispatcher.send(packet);
+    }
+
+
+    private ReceiveDispatcher.ReceivePacketCallback receivePacketCallback = new ReceiveDispatcher.ReceivePacketCallback() {
+        @Override
+        public void onReceivePacketCompleted(ReceivePacket packet) {
+            if (packet instanceof StringReceivePacket) {
+                String msg = ((StringReceivePacket) packet).string();
+                onReceiveNewMessage(msg);
             }
-        }
-    }
-
-    private IoArgs.IoArgsEventListener echoReceiveListener = new IoArgs.IoArgsEventListener() {
-        @Override
-        public void onStarted(IoArgs args) {
-
-        }
-
-        @Override
-        public void onCompleted(IoArgs args) {
-
-            onReceiveNewMessage(args.bufferString());
-            readNextMessage();
         }
     };
 
@@ -63,7 +62,11 @@ public class Connector implements Closeable, SocketChannelAdapter.OnChannelStatu
 
     @Override
     public void close() throws IOException {
-
+        receiveDispatcher.close();
+        sendDispatcher.close();
+        sender.close();
+        receiver.close();
+        channel.close();
     }
 
     @Override

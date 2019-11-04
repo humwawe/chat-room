@@ -2,6 +2,8 @@ package hum;
 
 
 import hum.bean.ServerInfo;
+import hum.core.IoContext;
+import hum.impl.IoSelectorProvider;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +13,9 @@ import java.io.InputStreamReader;
  * @author hum
  */
 public class Client {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        IoContext.setup().ioProvider(new IoSelectorProvider()).start();
+
         ServerInfo info = ClientSearcher.searchServer(10000);
         System.out.println("Server:" + info);
 
@@ -31,12 +35,15 @@ public class Client {
                 }
             }
         }
+        IoContext.close();
     }
 
     private static void write(TcpClient tcpClient) throws IOException {
         BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
         do {
             String str = input.readLine();
+            tcpClient.send(str);
+            tcpClient.send(str);
             tcpClient.send(str);
             if ("00bye00".equalsIgnoreCase(str)) {
                 break;
