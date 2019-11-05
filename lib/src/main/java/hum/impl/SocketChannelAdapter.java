@@ -59,6 +59,9 @@ public class SocketChannelAdapter implements Sender, Receiver, Closeable {
         return ioProvider.registerOutput(channel, outputCallback);
     }
 
+    /**
+     * runnable, when channel ready, callback
+     */
     private final IoProvider.HandleInputCallback inputCallback = new IoProvider.HandleInputCallback() {
 
         @Override

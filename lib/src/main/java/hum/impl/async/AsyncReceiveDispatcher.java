@@ -26,7 +26,9 @@ public class AsyncReceiveDispatcher implements ReceiveDispatcher {
 
     public AsyncReceiveDispatcher(Receiver receiver, ReceivePacketCallback callback) {
         this.receiver = receiver;
+        // when io args ready, callback invoke listener
         this.receiver.setReceiveListener(ioArgsEventListener);
+        // when packet ready, callback
         this.callback = callback;
     }
 

@@ -9,9 +9,9 @@ import java.nio.channels.SocketChannel;
  * @author hum
  */
 public class IoArgs {
-    private byte[] byteBuffer = new byte[5];
+    private byte[] byteBuffer = new byte[256];
     private ByteBuffer buffer = ByteBuffer.wrap(byteBuffer);
-    private int limit = 5;
+    private int limit = 256;
 
     public int readFrom(byte[] bytes, int offset) {
         int size = Math.min(bytes.length - offset, buffer.remaining());
