@@ -2,12 +2,14 @@ package hum.box;
 
 import hum.core.SendPacket;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author hum
  */
-public class StringSendPacket extends SendPacket {
+public class StringSendPacket extends SendPacket<ByteArrayInputStream> {
     private final byte[] bytes;
 
     public StringSendPacket(String msg) {
@@ -16,12 +18,8 @@ public class StringSendPacket extends SendPacket {
     }
 
     @Override
-    public byte[] bytes() {
-        return bytes;
+    protected ByteArrayInputStream createStream() {
+        return new ByteArrayInputStream(bytes);
     }
 
-    @Override
-    public void close() throws IOException {
-
-    }
 }

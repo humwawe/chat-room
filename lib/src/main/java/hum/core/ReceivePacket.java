@@ -1,8 +1,10 @@
 package hum.core;
 
+
+import java.io.OutputStream;
+
 /**
  * @author hum
  */
-public abstract class ReceivePacket extends Packet {
-    public abstract void save(byte[] bytes, int count);
+public abstract class ReceivePacket<T extends OutputStream> extends Packet<T> {
 }

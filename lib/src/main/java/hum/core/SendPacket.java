@@ -1,12 +1,12 @@
 package hum.core;
 
+import java.io.InputStream;
+
 /**
  * @author hum
  */
-public abstract class SendPacket extends Packet {
+public abstract class SendPacket<T extends InputStream> extends Packet<T> {
     private boolean isCanceled;
-
-    public abstract byte[] bytes();
 
     public boolean isCanceled() {
         return isCanceled;
