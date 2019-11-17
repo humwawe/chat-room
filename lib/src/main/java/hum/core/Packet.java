@@ -30,6 +30,10 @@ public abstract class Packet<Stream extends Closeable> implements Closeable {
         }
     }
 
+    public byte[] headerInfo() {
+        return null;
+    }
+
     protected abstract Stream createStream();
 
     protected void closeStream(Stream stream) throws IOException {

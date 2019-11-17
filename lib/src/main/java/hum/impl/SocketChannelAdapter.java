@@ -73,7 +73,9 @@ public class SocketChannelAdapter implements Sender, Receiver, Closeable {
             IoArgs args = processor.provideIoArgs();
 
             try {
-                if (args.readFrom(channel) > 0) {
+                if (args == null) {
+                    processor.onConsumeFailed(null, new IOException("ProvideIoArgs is null."));
+                } else if (args.readFrom(channel) > 0) {
                     processor.onConsumeCompleted(args);
                 } else {
                     processor.onConsumeFailed(args, new IOException("Can not read any data!"));
@@ -94,7 +96,9 @@ public class SocketChannelAdapter implements Sender, Receiver, Closeable {
             IoArgs args = processor.provideIoArgs();
 
             try {
-                if (args.writeTo(channel) > 0) {
+                if (args == null) {
+                    processor.onConsumeFailed(null, new IOException("ProvideIoArgs is null."));
+                } else if (args.writeTo(channel) > 0) {
                     processor.onConsumeCompleted(args);
                 } else {
                     processor.onConsumeFailed(args, new IOException("Can not write any data!"));
