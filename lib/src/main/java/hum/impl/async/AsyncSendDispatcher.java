@@ -31,7 +31,7 @@ public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventPr
 
     public AsyncSendDispatcher(Sender sender) {
         this.sender = sender;
-        sender.setSendListener(this);
+        sender.setSendProcessor(this);
     }
 
     @Override

@@ -7,7 +7,7 @@ import java.io.IOException;
  * @author hum
  */
 public interface Receiver extends Closeable {
-    void setReceiveListener(IoArgs.IoArgsEventProcessor processor);
+    void setReceiveProcessor(IoArgs.IoArgsEventProcessor processor);
 
     boolean postReceiveAsync() throws IOException;
 }

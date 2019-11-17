@@ -5,6 +5,7 @@ import hum.handler.ClientHandler;
 import hum.handler.ClientHandlerCallback;
 import hum.utils.CloseUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -23,13 +24,15 @@ import java.util.concurrent.Executors;
 public class TcpServer implements ClientHandlerCallback {
     private final int port;
     private ClientListener listener;
+    private final File cachePath;
     private List<ClientHandler> clientHandlerList = new ArrayList<>();
     private final ExecutorService forwardingThreadPoolExecutor;
     private Selector selector;
     private ServerSocketChannel serverSocketChannel;
 
-    public TcpServer(int port) {
+    public TcpServer(int port, File cachePath) {
         this.port = port;
+        this.cachePath = cachePath;
         this.forwardingThreadPoolExecutor = Executors.newSingleThreadExecutor();
     }
 
@@ -131,7 +134,7 @@ public class TcpServer implements ClientHandlerCallback {
                             ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
                             SocketChannel socketChannel = serverSocketChannel.accept();
                             try {
-                                ClientHandler clientHandler = new ClientHandler(socketChannel, TcpServer.this);
+                                ClientHandler clientHandler = new ClientHandler(socketChannel, TcpServer.this, cachePath);
                                 synchronized (TcpServer.this) {
                                     clientHandlerList.add(clientHandler);
                                 }

@@ -1,10 +1,7 @@
 package hum.impl.async;
 
 import hum.box.StringReceivePacket;
-import hum.core.IoArgs;
-import hum.core.ReceiveDispatcher;
-import hum.core.ReceivePacket;
-import hum.core.Receiver;
+import hum.core.*;
 import hum.utils.CloseUtils;
 
 import java.io.IOException;
@@ -20,7 +17,7 @@ public class AsyncReceiveDispatcher implements ReceiveDispatcher, IoArgs.IoArgsE
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
     private final Receiver receiver;
     private final ReceivePacketCallback callback;
-    private ReceivePacket<?> packetTemp;
+    private ReceivePacket<?, ?> packetTemp;
     private IoArgs ioArgs = new IoArgs();
     private long total;
     private long position;
@@ -28,8 +25,7 @@ public class AsyncReceiveDispatcher implements ReceiveDispatcher, IoArgs.IoArgsE
 
     public AsyncReceiveDispatcher(Receiver receiver, ReceivePacketCallback callback) {
         this.receiver = receiver;
-        // when io args ready, callback invoke listener
-        this.receiver.setReceiveListener(this);
+        this.receiver.setReceiveProcessor(this);
         // when packet ready, callback
         this.callback = callback;
     }
@@ -37,7 +33,8 @@ public class AsyncReceiveDispatcher implements ReceiveDispatcher, IoArgs.IoArgsE
     private void assemblePacket(IoArgs args) {
         if (packetTemp == null) {
             int length = args.readLength();
-            packetTemp = new StringReceivePacket(length);
+            byte type = length > 200 ? Packet.TYPE_STREAM_FILE : Packet.TYPE_MEMORY_STRING;
+            packetTemp = callback.onArrivedNewPacket(type, length);
             packetChannel = Channels.newChannel(packetTemp.open());
             total = length;
             position = 0;
@@ -57,6 +54,7 @@ public class AsyncReceiveDispatcher implements ReceiveDispatcher, IoArgs.IoArgsE
 
     private void completePacket(boolean isSucceed) {
         ReceivePacket packet = this.packetTemp;
+        // build entity when close
         CloseUtils.close(packet);
         packetTemp = null;
         WritableByteChannel channel = this.packetChannel;

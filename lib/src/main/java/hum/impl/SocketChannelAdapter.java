@@ -33,7 +33,7 @@ public class SocketChannelAdapter implements Sender, Receiver, Closeable {
     }
 
     @Override
-    public void setReceiveListener(IoArgs.IoArgsEventProcessor processor) {
+    public void setReceiveProcessor(IoArgs.IoArgsEventProcessor processor) {
         receiveIoEventProcessor = processor;
     }
 
@@ -47,7 +47,7 @@ public class SocketChannelAdapter implements Sender, Receiver, Closeable {
     }
 
     @Override
-    public void setSendListener(IoArgs.IoArgsEventProcessor processor) {
+    public void setSendProcessor(IoArgs.IoArgsEventProcessor processor) {
         sendIoEventProcessor = processor;
     }
 

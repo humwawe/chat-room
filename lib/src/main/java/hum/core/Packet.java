@@ -6,12 +6,16 @@ import java.io.IOException;
 /**
  * @author hum
  */
-public abstract class Packet<T extends Closeable> implements Closeable {
-    protected byte type;
-    protected long length;
-    private T stream;
+public abstract class Packet<Stream extends Closeable> implements Closeable {
+    public static final byte TYPE_MEMORY_BYTES = 1;
+    public static final byte TYPE_MEMORY_STRING = 2;
+    public static final byte TYPE_STREAM_FILE = 3;
+    public static final byte TYPE_STREAM_DIRECT = 4;
 
-    public final T open() {
+    protected long length;
+    private Stream stream;
+
+    public final Stream open() {
         if (stream == null) {
             stream = createStream();
         }
@@ -26,15 +30,13 @@ public abstract class Packet<T extends Closeable> implements Closeable {
         }
     }
 
-    protected abstract T createStream();
+    protected abstract Stream createStream();
 
-    protected void closeStream(T stream) throws IOException {
+    protected void closeStream(Stream stream) throws IOException {
         stream.close();
     }
 
-    public byte type() {
-        return type;
-    }
+    public abstract byte type();
 
     public long length() {
         return length;

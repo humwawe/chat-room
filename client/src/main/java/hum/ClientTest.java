@@ -2,6 +2,7 @@ package hum;
 
 import hum.bean.ServerInfo;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ public class ClientTest {
     private static boolean done;
 
     public static void main(String[] args) throws IOException {
+        File cachePath = Foo.getCacheDir("client/test");
         ServerInfo info = ClientSearcher.searchServer(10000);
         System.out.println("Server:" + info);
         if (info == null) {
@@ -23,7 +25,7 @@ public class ClientTest {
         final List<TcpClient> tcpClients = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             try {
-                TcpClient tcpClient = TcpClient.startWith(info);
+                TcpClient tcpClient = TcpClient.startWith(info, cachePath);
                 if (tcpClient == null) {
                     System.out.println("connect exception");
                     continue;

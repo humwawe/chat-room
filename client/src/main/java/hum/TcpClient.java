@@ -3,6 +3,8 @@ package hum;
 
 import hum.bean.ServerInfo;
 import hum.core.Connector;
+import hum.core.Packet;
+import hum.core.ReceivePacket;
 import hum.utils.CloseUtils;
 
 import java.io.*;
@@ -16,12 +18,15 @@ import java.nio.channels.SocketChannel;
  * @author hum
  */
 public class TcpClient extends Connector {
+    private final File cachePath;
 
-    public TcpClient(SocketChannel socketChannel) throws IOException {
+    public TcpClient(SocketChannel socketChannel, File cachePath) throws IOException {
+        this.cachePath = cachePath;
         setup(socketChannel);
     }
 
-    public static TcpClient startWith(ServerInfo info) throws IOException {
+    public static TcpClient startWith(ServerInfo info, File cachePath) throws IOException {
+
         SocketChannel socketChannel = SocketChannel.open();
 
         socketChannel.connect(new InetSocketAddress(Inet4Address.getByName(info.getAddress()), info.getPort()));
@@ -31,12 +36,26 @@ public class TcpClient extends Connector {
         System.out.println("server info：" + socketChannel.getRemoteAddress().toString());
 
         try {
-            return new TcpClient(socketChannel);
+            return new TcpClient(socketChannel, cachePath);
         } catch (Exception e) {
             System.out.println("exception close!");
             CloseUtils.close(socketChannel);
         }
         return null;
+    }
+
+    @Override
+    protected void onReceivedPacket(ReceivePacket packet) {
+        super.onReceivedPacket(packet);
+        if (packet.type() == Packet.TYPE_MEMORY_STRING) {
+            String string = (String) packet.entity();
+            System.out.println(key.toString() + ":" + string);
+        }
+    }
+
+    @Override
+    protected File createNewReceiveFile() {
+        return Foo.createRandomTemp(cachePath);
     }
 
     @Override

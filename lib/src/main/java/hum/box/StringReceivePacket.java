@@ -1,33 +1,23 @@
 package hum.box;
 
-import hum.core.ReceivePacket;
-
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.IOException;
 
 /**
  * @author hum
  */
-public class StringReceivePacket extends ReceivePacket<ByteArrayOutputStream> {
-    private String string;
+public class StringReceivePacket extends AbsByteArrayReceivePacket<String> {
 
-    public StringReceivePacket(int len) {
-        length = len;
-    }
-
-    public String string() {
-        return string;
+    public StringReceivePacket(long len) {
+        super(len);
     }
 
     @Override
-    protected ByteArrayOutputStream createStream() {
-        return new ByteArrayOutputStream((int) length);
+    protected String buildEntity(ByteArrayOutputStream stream) {
+        return new String(stream.toByteArray());
     }
 
     @Override
-    protected void closeStream(ByteArrayOutputStream stream) throws IOException {
-        super.closeStream(stream);
-        string = new String(stream.toByteArray());
+    public byte type() {
+        return TYPE_MEMORY_STRING;
     }
 }
