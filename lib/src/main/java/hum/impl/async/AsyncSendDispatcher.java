@@ -97,7 +97,7 @@ public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventPr
         if (packetChannel == null) {
             packetChannel = Channels.newChannel(packetTemp.open());
             args.limit(4);
-            args.writeLength((int) packetTemp.length());
+//            args.writeLength((int) packetTemp.length());
         } else {
             args.limit((int) Math.min(args.capacity(), total - position));
             try {

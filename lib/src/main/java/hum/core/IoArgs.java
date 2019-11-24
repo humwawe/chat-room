@@ -10,13 +10,26 @@ import java.nio.channels.WritableByteChannel;
 /**
  * @author hum
  */
-@SuppressWarnings("Duplicates")
 public class IoArgs {
     private ByteBuffer buffer = ByteBuffer.allocate(256);
     private int limit = 256;
 
+    public int readFrom(byte[] bytes, int offset, int count) {
+        int size = Math.min(count, buffer.remaining());
+        if (size <= 0) {
+            return 0;
+        }
+        buffer.put(bytes, offset, size);
+        return size;
+    }
+
+    public int writeTo(byte[] bytes, int offset) {
+        int size = Math.min(bytes.length - offset, buffer.remaining());
+        buffer.get(bytes, offset, size);
+        return size;
+    }
+
     public int readFrom(ReadableByteChannel channel) throws IOException {
-        startWriting();
         int bytesProduced = 0;
         while (buffer.hasRemaining()) {
             int len = channel.read(buffer);
@@ -25,7 +38,6 @@ public class IoArgs {
             }
             bytesProduced += len;
         }
-        finishWriting();
         return bytesProduced;
     }
 
@@ -68,11 +80,6 @@ public class IoArgs {
         return bytesProduced;
     }
 
-    public void writeLength(int total) {
-        startWriting();
-        buffer.putInt(total);
-        finishWriting();
-    }
 
     public int readLength() {
         return buffer.getInt();
@@ -88,11 +95,21 @@ public class IoArgs {
     }
 
     public void limit(int limit) {
-        this.limit = limit;
+        this.limit = Math.min(limit, buffer.capacity());
     }
 
     public int capacity() {
         return buffer.capacity();
+    }
+
+    public boolean remained() {
+        return buffer.remaining() > 0;
+    }
+
+    public int fillEmpty(int size) {
+        int fillSize = Math.min(size, buffer.remaining());
+        buffer.position(buffer.position() + fillSize);
+        return fillSize;
     }
 
     public interface IoArgsEventProcessor {
