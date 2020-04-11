@@ -112,6 +112,12 @@ public class IoArgs {
         return fillSize;
     }
 
+    public int setEmpty(int size) {
+        int emptySize = Math.min(size, buffer.remaining());
+        buffer.position(buffer.position() + emptySize);
+        return emptySize;
+    }
+
     public interface IoArgsEventProcessor {
         IoArgs provideIoArgs();
 

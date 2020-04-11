@@ -68,4 +68,6 @@ public abstract class Frame {
     public short getBodyIdentifier() {
         return (short) (((short) header[4]) & 0xFF);
     }
+
+    public abstract int getConsumableLength();
 }

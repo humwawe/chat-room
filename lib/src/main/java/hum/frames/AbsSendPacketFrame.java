@@ -17,6 +17,10 @@ public abstract class AbsSendPacketFrame extends AbsSendFrame {
         this.packet = packet;
     }
 
+    public synchronized SendPacket getPacket() {
+        return packet;
+    }
+
     @Override
     public synchronized boolean handle(IoArgs args) throws IOException {
         if (packet == null && !isSending()) {

@@ -16,18 +16,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author hum
  */
-public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventProcessor {
+public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventProcessor, AsyncPacketReader.PacketProvider {
 
     private final Sender sender;
     private final Queue<SendPacket> queue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isSending = new AtomicBoolean();
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-    private SendPacket<?> packetTemp;
-    private IoArgs ioArgs = new IoArgs();
-    private long total;
-    private long position;
-    private ReadableByteChannel packetChannel;
+    private final AsyncPacketReader reader = new AsyncPacketReader(this);
+    private final Object queueLock = new Object();
 
     public AsyncSendDispatcher(Sender sender) {
         this.sender = sender;
@@ -36,41 +33,39 @@ public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventPr
 
     @Override
     public void send(SendPacket packet) {
-        queue.offer(packet);
-        if (isSending.compareAndSet(false, true)) {
-            sendNextPacket();
+        synchronized (queueLock) {
+            queue.offer(packet);
+            if (isSending.compareAndSet(false, true)) {
+                if (reader.requestTakePacket()) {
+                    requestSend();
+                }
+
+            }
         }
     }
 
-    private void sendNextPacket() {
-        if (packetTemp != null) {
-            CloseUtils.close(packetTemp);
+    @Override
+    public SendPacket takePacket() {
+        SendPacket packet;
+        synchronized (queueLock) {
+            packet = queue.poll();
+            if (packet == null) {
+                isSending.set(false);
+                return null;
+            }
         }
-        SendPacket packet = takePacket();
-        packetTemp = packet;
-        if (packet == null) {
-            isSending.set(false);
-            return;
-        }
-        total = packet.length();
-        position = 0;
-        sendCurrentPacket();
-    }
-
-    private SendPacket takePacket() {
-        SendPacket packet = queue.poll();
-        if (packet != null && packet.isCanceled()) {
+        if (packet.isCanceled()) {
             return takePacket();
         }
         return packet;
     }
 
-    private void sendCurrentPacket() {
-        if (position >= total) {
-            completePacket(position == total);
-            sendNextPacket();
-            return;
-        }
+    @Override
+    public void completedPacket(SendPacket packet, boolean isSucceed) {
+        CloseUtils.close(packet);
+    }
+
+    private void requestSend() {
         try {
             sender.postSendAsync();
         } catch (IOException e) {
@@ -78,47 +73,25 @@ public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventPr
         }
     }
 
-    private void completePacket(boolean isSucceed) {
-        SendPacket packet = this.packetTemp;
-        if (packet == null) {
-            return;
-        }
-        CloseUtils.close(packet);
-        CloseUtils.close(packetChannel);
-        packetTemp = null;
-        packetChannel = null;
-        total = 0;
-        position = 0;
-    }
-
     @Override
     public IoArgs provideIoArgs() {
-        IoArgs args = ioArgs;
-        if (packetChannel == null) {
-            packetChannel = Channels.newChannel(packetTemp.open());
-            args.limit(4);
-//            args.writeLength((int) packetTemp.length());
-        } else {
-            args.limit((int) Math.min(args.capacity(), total - position));
-            try {
-                int count = args.readFrom(packetChannel);
-                position += count;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        return args;
+        return reader.fillData();
     }
 
     @Override
     public void onConsumeFailed(IoArgs args, Exception e) {
-        e.printStackTrace();
+        if (args != null) {
+            e.printStackTrace();
+        } else {
+
+        }
     }
 
     @Override
     public void onConsumeCompleted(IoArgs args) {
-        sendCurrentPacket();
+        if (reader.requestTakePacket()) {
+            requestSend();
+        }
     }
 
     private void closeAndNotify() {
@@ -128,16 +101,22 @@ public class AsyncSendDispatcher implements SendDispatcher, IoArgs.IoArgsEventPr
 
     @Override
     public void cancel(SendPacket packet) {
-
+        boolean ret;
+        synchronized (queueLock) {
+            ret = queue.remove(packet);
+        }
+        if (ret) {
+            packet.cancel();
+            return;
+        }
+        reader.cancel(packet);
     }
 
     @Override
     public void close() throws IOException {
         if (isClosed.compareAndSet(false, true)) {
             isSending.set(false);
-            SendPacket packet = packetTemp;
-            // complete by exception
-            completePacket(false);
+            reader.close();
         }
     }
 }
